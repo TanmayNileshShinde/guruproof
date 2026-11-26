@@ -5,6 +5,8 @@
 @layer base {
   html {
     font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+    background-color: #0b0d14;
+    color: #eef0f5;
   }
 
   code,
@@ -14,20 +16,24 @@
   }
 }
 
+.ease-unslop {
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b111c;
+  background: #07080d;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #233046;
-  border-radius: 9999px;
+  background: #222736;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334563;
+  background: #2f364a;
 }

@@ -1,21 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
-  Award,
-  BookOpen,
-  CheckCircle2,
+  ArrowUpRight,
+  Check,
   Code2,
-  ExternalLink,
   FlaskConical,
-  Globe,
-  HelpCircle,
   Lightbulb,
   Play,
   RotateCcw,
-  ShieldCheck,
-  Sparkles,
+  Shield,
   Terminal,
-  XCircle,
+  X,
 } from "lucide-react";
 import { tutorApi } from "./api";
 import { EvalSuiteView } from "./components/EvalSuiteView";
@@ -30,10 +25,10 @@ import {
   TutorLanguage,
 } from "./types";
 
-const LANGUAGES: Array<{ id: TutorLanguage; label: string; native: string }> = [
-  { id: "en", label: "English", native: "EN" },
-  { id: "hinglish", label: "Hinglish", native: "HI-EN" },
-  { id: "hi", label: "हिन्दी", native: "HI" },
+const LANGUAGES: Array<{ id: TutorLanguage; label: string }> = [
+  { id: "en", label: "English" },
+  { id: "hinglish", label: "Hinglish" },
+  { id: "hi", label: "हिन्दी" },
 ];
 
 const UI_COPY: Record<
@@ -54,46 +49,46 @@ const UI_COPY: Record<
   }
 > = {
   en: {
-    step1Title: "1. Diagnostic Pre-Test",
-    step1Sub: "Measure baseline intuition before viewing hints",
-    diagnoseBtn: "Diagnose Concept & Trace",
-    step2Title: "2. Socratic Diagnosis & Grounded Docs",
-    nextHintBtn: "Request Next Hint Tier",
-    step3Title: "3. Repair Code & Verify Live Tests",
-    verifyFixBtn: "Verify My Fix",
-    resetCodeBtn: "Reset Buggy Code",
-    step4Title: "4. Blind Transfer Post-Test",
-    step4Sub: "Apply the fixed invariant to a fresh edge-case scenario",
-    proveMasteryBtn: "Verify Mastery Proof",
-    nextLabBtn: "Advance to Next Lab",
+    step1Title: "1. Diagnostic pre-test",
+    step1Sub: "Establish baseline intuition before hints appear",
+    diagnoseBtn: "Diagnose concept and trace",
+    step2Title: "2. Socratic diagnosis and docs",
+    nextHintBtn: "Show next hint tier",
+    step3Title: "3. Repair invariant and verify",
+    verifyFixBtn: "Verify fix",
+    resetCodeBtn: "Reset",
+    step4Title: "4. Blind transfer post-test",
+    step4Sub: "Apply the fixed invariant to an unseen scenario",
+    proveMasteryBtn: "Verify mastery",
+    nextLabBtn: "Next lab",
   },
   hinglish: {
-    step1Title: "1. Diagnostic Pre-Test",
-    step1Sub: "Hints dekhne se pehle apna current concept check karo",
-    diagnoseBtn: "Concept Diagnose Karo",
-    step2Title: "2. Socratic Diagnosis & Citations",
-    nextHintBtn: "Agla Hint Tier Dekho",
-    step3Title: "3. Code Fix Karo & Tests Chalao",
-    verifyFixBtn: "Mera Fix Verify Karo",
-    resetCodeBtn: "Original Code Reset",
-    step4Title: "4. Blind Transfer Post-Test",
-    step4Sub: "Ab bina code dekhe naye scenario par concept prove karo",
-    proveMasteryBtn: "Mastery Proof Generate Karo",
-    nextLabBtn: "Next Lab Start Karo",
+    step1Title: "1. Diagnostic pre-test",
+    step1Sub: "Hints dekhne se pehle apna baseline concept check karein",
+    diagnoseBtn: "Concept diagnose karein",
+    step2Title: "2. Socratic diagnosis aur docs",
+    nextHintBtn: "Agla hint tier dekhein",
+    step3Title: "3. Code repair aur test check",
+    verifyFixBtn: "Fix verify karein",
+    resetCodeBtn: "Reset",
+    step4Title: "4. Blind transfer post-test",
+    step4Sub: "Naye edge-case par bina help ke concept prove karein",
+    proveMasteryBtn: "Mastery verify karein",
+    nextLabBtn: "Next lab",
   },
   hi: {
-    step1Title: "1. निदानात्मक पूर्व-परीक्षण (Pre-Test)",
+    step1Title: "1. निदानात्मक पूर्व-परीक्षण",
     step1Sub: "संकेत देखने से पहले अपनी वर्तमान समझ जांचें",
     diagnoseBtn: "कोड और अवधारणा जांचें",
-    step2Title: "2. सुकराती निदान और संदर्भ (Citations)",
+    step2Title: "2. सुकराती निदान और संदर्भ",
     nextHintBtn: "अगला संकेत स्तर देखें",
-    step3Title: "3. कोड सुधारें और परीक्षण चलाएं",
+    step3Title: "3. कोड सुधारें और सत्यापित करें",
     verifyFixBtn: "सुधार सत्यापित करें",
-    resetCodeBtn: "मूल कोड रीसेट करें",
+    resetCodeBtn: "रीसेट",
     step4Title: "4. ब्लाइंड ट्रांसफर पोस्ट-टेस्ट",
     step4Sub: "एक नए परिदृश्य पर अपनी समझ प्रमाणित करें",
-    proveMasteryBtn: "मास्टरी प्रूफ बनाएं",
-    nextLabBtn: "अगली लैब पर जाएं",
+    proveMasteryBtn: "मास्टरी सत्यापित करें",
+    nextLabBtn: "अगली लैब",
   },
 };
 
@@ -128,6 +123,9 @@ export function App() {
     () => topics.find((t) => t.id === selectedTopicId) || topics[0] || null,
     [topics, selectedTopicId]
   );
+
+  const codeLines = useMemo(() => editorCode.split(/\r?\n/), [editorCode]);
+  const highlightedLine = diagnosis?.brokenLine ?? activeTopic?.bugLine ?? 1;
 
   useEffect(() => {
     let mounted = true;
@@ -233,7 +231,8 @@ export function App() {
     setLoadingTransfer(true);
     setErrorBanner(null);
     try {
-      const preScore = diagnosis?.preScorePct ?? (preAnswerIndex === activeTopic.preQuiz.correctIndex ? 100 : 25);
+      const preScore =
+        diagnosis?.preScorePct ?? (preAnswerIndex === activeTopic.preQuiz.correctIndex ? 100 : 25);
       const report = await tutorApi.submitTransferCheck({
         topicId: activeTopic.id,
         preScorePct: preScore,
@@ -269,98 +268,104 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b12] text-slate-100">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-[#070b12]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+    <div className="min-h-screen bg-[#0b0d14] text-[#eef0f5]">
+      {/* Compact single-row workbench top bar */}
+      <header className="sticky top-0 z-30 border-b border-[#eef0f5]/[0.08] bg-[#07080d]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-6 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-lg shadow-indigo-500/20">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-extrabold tracking-tight text-white">GuruProof</h1>
-                <span className="rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-300">
-                  Track C3
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Multilingual Socratic AI Tutor · Diagnostic Trace + Blind Mastery Proof
-              </p>
-            </div>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+              aria-hidden="true"
+              className="shrink-0 text-[#eef0f5]"
+            >
+              <path
+                d="M5.5 4.5L2 9L5.5 13.5M12.5 4.5L16 9L12.5 13.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="9" cy="9" r="1.5" fill="#38bdf8" />
+            </svg>
+            <h1 className="text-[16px] font-semibold tracking-[-0.01em] text-[#eef0f5]">
+              GuruProof
+            </h1>
+            <span className="hidden font-mono text-[12px] text-[#7a8296] sm:inline">
+              Diagnostic coding tutor
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Health indicator */}
-            <div className="hidden items-center gap-2 rounded-full border border-slate-800 bg-slate-900/90 px-3 py-1 text-xs text-slate-300 md:flex">
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  health?.status === "healthy" ? "bg-emerald-400" : "bg-amber-400"
-                }`}
-              />
-              <span>
-                {health?.integrations.olostep ? "Olostep Live Grounding Ready" : "Curated Docs Mode"}
-              </span>
-            </div>
-
-            {/* Tab Switcher */}
-            <div className="flex items-center rounded-xl border border-slate-800 bg-slate-900 p-1 text-xs font-semibold">
+          <div className="flex items-center gap-3">
+            {/* Navigation switch */}
+            <nav className="inline-flex items-center rounded-[8px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-0.5 text-[13px]">
               <button
                 type="button"
                 onClick={() => setActiveTab("tutor")}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
+                className={`ease-unslop inline-flex h-8 items-center gap-2 rounded-[6px] px-3 transition-colors duration-150 ${
                   activeTab === "tutor"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-[#1a1e28] font-medium text-[#eef0f5] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                    : "text-[#7a8296] hover:text-[#a3a9b8]"
                 }`}
               >
-                <Code2 className="h-3.5 w-3.5" />
-                Tutor Lab
+                <Code2 className="h-4 w-4 text-[#a3a9b8]" strokeWidth={1.5} />
+                <span>Tutor lab</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("evals")}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
+                className={`ease-unslop inline-flex h-8 items-center gap-2 rounded-[6px] px-3 transition-colors duration-150 ${
                   activeTab === "evals"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-[#1a1e28] font-medium text-[#eef0f5] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                    : "text-[#7a8296] hover:text-[#a3a9b8]"
                 }`}
               >
-                <FlaskConical className="h-3.5 w-3.5" />
-                Pedagogical Evals
+                <FlaskConical className="h-4 w-4 text-[#a3a9b8]" strokeWidth={1.5} />
+                <span>Pedagogical evals</span>
               </button>
-            </div>
+            </nav>
 
-            {/* Language Selector */}
-            <div className="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
-              <Globe className="ml-1.5 h-3.5 w-3.5 text-slate-400" />
+            {/* Language switch */}
+            <div className="inline-flex items-center rounded-[8px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-0.5 text-[13px]">
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.id}
                   type="button"
                   onClick={() => handleLanguageChange(lang.id)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  className={`ease-unslop h-8 rounded-[6px] px-2.5 transition-colors duration-150 ${
                     language === lang.id
-                      ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40"
-                      : "text-slate-400 hover:text-slate-200"
+                      ? "bg-[#1a1e28] font-medium text-[#38bdf8] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                      : "text-[#7a8296] hover:text-[#a3a9b8]"
                   }`}
                 >
                   {lang.label}
                 </button>
               ))}
             </div>
+
+            {/* Quiet grounding meta indicator */}
+            <div className="hidden items-center gap-2 font-mono text-[12px] text-[#7a8296] lg:flex">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  health?.status === "healthy" ? "bg-[#4cc38a]" : "bg-[#d99b43]"
+                }`}
+              />
+              <span>{health?.integrations.olostep ? "Olostep live" : "Curated docs"}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-[1440px] px-6 py-6">
         {errorBanner && (
-          <div className="mb-5 flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-950/30 px-4 py-3 text-sm text-rose-200">
+          <div className="mb-6 flex items-center justify-between rounded-[10px] border border-[#e5484d]/30 bg-[#11141c] px-4 py-3 text-[13px] text-[#eef0f5]">
             <span>{errorBanner}</span>
             <button
               type="button"
               onClick={() => setErrorBanner(null)}
-              className="text-xs font-semibold text-rose-300 underline"
+              className="text-[12px] font-medium text-[#a3a9b8] underline hover:text-[#eef0f5]"
             >
               Dismiss
             </button>
@@ -371,29 +376,28 @@ export function App() {
           <EvalSuiteView report={evalReport} loading={evalLoading} onRefresh={handleRefreshEvals} />
         ) : (
           <div className="space-y-6">
-            {/* Topic Selector Strip */}
-            <section className="rounded-2xl border border-slate-800 bg-[#0d1420] p-4">
+            {/* Lab selector bar */}
+            <section className="rounded-[14px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  <BookOpen className="h-4 w-4 text-indigo-400" />
-                  Select Interactive DSA Diagnostic Lab
-                </div>
+                <span className="text-[13px] font-medium text-[#a3a9b8]">
+                  Diagnostic DSA curriculum
+                </span>
 
                 <button
                   type="button"
                   onClick={() => setCustomMode((m) => !m)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-semibold transition ${
+                  className={`ease-unslop inline-flex h-8 items-center gap-2 rounded-[8px] border px-3 text-[12px] font-medium transition-colors duration-150 active:scale-[0.98] ${
                     customMode
-                      ? "border-amber-500/50 bg-amber-500/15 text-amber-200"
-                      : "border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600"
+                      ? "border-[#38bdf8]/40 bg-[#1a1e28] text-[#38bdf8]"
+                      : "border-[#eef0f5]/[0.08] bg-[#1a1e28] text-[#a3a9b8] hover:text-[#eef0f5]"
                   }`}
                 >
-                  <Terminal className="h-3.5 w-3.5" />
-                  {customMode ? "Custom Snippet Active" : "Diagnose Custom Code"}
+                  <Terminal className="h-4 w-4 text-[#7a8296]" strokeWidth={1.5} />
+                  <span>{customMode ? "Custom snippet active" : "Custom code"}</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {topics.map((topic) => {
                   const selected = topic.id === activeTopic?.id;
                   return (
@@ -401,43 +405,37 @@ export function App() {
                       key={topic.id}
                       type="button"
                       onClick={() => selectTopic(topic)}
-                      className={`rounded-xl border p-3 text-left transition ${
+                      className={`ease-unslop flex flex-col justify-between rounded-[10px] border p-4 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] ${
                         selected
-                          ? "border-indigo-500 bg-indigo-500/15 shadow-sm shadow-indigo-500/10"
-                          : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
+                          ? "border-[#38bdf8]/50 bg-[#1a1e28] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                          : "border-[#eef0f5]/[0.06] bg-[#07080d]/60 hover:border-[#eef0f5]/[0.14] hover:bg-[#1a1e28]/50"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-medium text-indigo-300">
+                      <div className="flex items-center justify-between gap-2 text-[12px]">
+                        <span className={selected ? "text-[#38bdf8]" : "text-[#7a8296]"}>
                           {topic.category}
                         </span>
-                        <span
-                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                            topic.difficulty === "Beginner"
-                              ? "bg-emerald-500/15 text-emerald-300"
-                              : "bg-amber-500/15 text-amber-300"
-                          }`}
-                        >
-                          {topic.difficulty}
-                        </span>
+                        <span className="font-mono text-[#7a8296]">{topic.difficulty}</span>
                       </div>
-                      <div className="mt-1 text-sm font-semibold text-slate-100">{topic.title}</div>
+                      <div className="mt-2 text-[14px] font-medium leading-snug text-[#eef0f5]">
+                        {topic.title}
+                      </div>
                     </button>
                   );
                 })}
               </div>
 
               {customMode && (
-                <div className="mt-4 rounded-xl border border-amber-500/30 bg-slate-950/70 p-3.5">
-                  <label className="mb-1.5 block text-xs font-semibold text-amber-200">
-                    Paste Your Own Java/DSA Code to Diagnose Misconceptions:
+                <div className="mt-4 rounded-[10px] border border-[#eef0f5]/[0.08] bg-[#07080d] p-4">
+                  <label className="mb-2 block text-[13px] font-medium text-[#a3a9b8]">
+                    Custom Java or DSA snippet
                   </label>
                   <textarea
                     rows={4}
                     value={customCode}
                     onChange={(e) => setCustomCode(e.target.value)}
-                    placeholder="Paste code containing a loop, pointer, recursion, or off-by-one bug..."
-                    className="w-full rounded-lg border border-slate-800 bg-[#070b12] p-3 font-mono text-xs text-slate-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none"
+                    placeholder="Paste code with a pointer, loop boundary, or recursion bug"
+                    className="w-full rounded-[8px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-3 font-mono text-[13px] leading-relaxed text-[#eef0f5] placeholder-[#7a8296] focus:border-[#38bdf8]/50 focus:outline-none"
                   />
                 </div>
               )}
@@ -445,29 +443,23 @@ export function App() {
 
             {activeTopic && (
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                {/* Left Column: Pre-Test + Diagnosis + Trace + Citations */}
+                {/* Left Workbench Column */}
                 <div className="space-y-6 lg:col-span-6">
                   {/* Stage 1: Diagnostic Pre-Test */}
-                  <section className="rounded-2xl border border-slate-800 bg-[#0d1420] p-5">
-                    <div className="flex items-start justify-between gap-3">
+                  <section className="rounded-[14px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-5">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="text-base font-bold text-white">{copy.step1Title}</h2>
-                        <p className="mt-0.5 text-xs text-slate-400">{copy.step1Sub}</p>
+                        <h2 className="text-[16px] font-medium text-[#eef0f5]">{copy.step1Title}</h2>
+                        <p className="mt-1 text-[13px] text-[#7a8296]">{copy.step1Sub}</p>
                       </div>
                       {diagnosis && (
-                        <span
-                          className={`rounded-full px-2.5 py-1 font-mono text-xs font-bold ${
-                            diagnosis.preCorrect
-                              ? "bg-emerald-500/15 text-emerald-300"
-                              : "bg-amber-500/15 text-amber-300"
-                          }`}
-                        >
-                          Pre: {diagnosis.preScorePct}%
+                        <span className="shrink-0 rounded-[4px] border border-[#eef0f5]/[0.08] bg-[#1a1e28] px-2 py-1 font-mono text-[12px] tabular-nums text-[#a3a9b8]">
+                          Pre {diagnosis.preScorePct}%
                         </span>
                       )}
                     </div>
 
-                    <p className="mt-3 text-sm font-medium text-slate-200">
+                    <p className="mt-4 text-[14px] leading-relaxed text-[#eef0f5]">
                       {activeTopic.preQuiz.question[language]}
                     </p>
 
@@ -479,22 +471,22 @@ export function App() {
                             key={idx}
                             type="button"
                             onClick={() => setPreAnswerIndex(idx)}
-                            className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-xs transition sm:text-sm ${
+                            className={`ease-unslop flex min-h-[40px] w-full items-center gap-3 rounded-[8px] border px-3 py-2 text-left text-[13px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] ${
                               chosen
-                                ? "border-indigo-500 bg-indigo-500/15 text-white"
-                                : "border-slate-800 bg-slate-900/70 text-slate-300 hover:border-slate-700"
+                                ? "border-[#38bdf8]/50 bg-[#1a1e28] text-[#eef0f5]"
+                                : "border-[#eef0f5]/[0.08] bg-[#07080d]/60 text-[#a3a9b8] hover:border-[#eef0f5]/[0.14] hover:text-[#eef0f5]"
                             }`}
                           >
                             <span
-                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold ${
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] border font-mono text-[12px] tabular-nums ${
                                 chosen
-                                  ? "bg-indigo-500 text-white"
-                                  : "bg-slate-800 text-slate-400"
+                                  ? "border-[#38bdf8]/40 bg-[#38bdf8]/15 text-[#38bdf8]"
+                                  : "border-[#eef0f5]/[0.08] bg-[#11141c] text-[#7a8296]"
                               }`}
                             >
                               {String.fromCharCode(65 + idx)}
                             </span>
-                            <span>{opt}</span>
+                            <span className="leading-snug">{opt}</span>
                           </button>
                         );
                       })}
@@ -505,56 +497,58 @@ export function App() {
                         type="button"
                         onClick={() => handleDiagnose(1)}
                         disabled={loadingDiagnosis}
-                        className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                        className="ease-unslop inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#eef0f5] px-4 text-[14px] font-medium text-[#07080d] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
                       >
-                        <Play className="h-4 w-4" />
-                        {loadingDiagnosis ? "Analyzing..." : copy.diagnoseBtn}
+                        <Play className="h-4 w-4 text-[#07080d]" strokeWidth={1.5} />
+                        <span>{loadingDiagnosis ? "Analyzing" : copy.diagnoseBtn}</span>
                       </button>
-                      {preAnswerIndex === undefined && (
-                        <span className="text-xs text-slate-500">
-                          Pick an option above for accurate baseline scoring
-                        </span>
-                      )}
                     </div>
                   </section>
 
-                  {/* Stage 2: Socratic Diagnosis, Anti-Spoiler Hints & Grounded Docs */}
+                  {/* Stage 2: Socratic Diagnosis, Memory Trace, Grounded References */}
                   {diagnosis && (
-                    <section className="space-y-4 rounded-2xl border border-indigo-500/30 bg-[#0d1420] p-5">
+                    <section className="space-y-4 rounded-[14px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h2 className="text-base font-bold text-white">{copy.step2Title}</h2>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-                            <ShieldCheck className="h-3.5 w-3.5" />
+                        <h2 className="text-[16px] font-medium text-[#eef0f5]">{copy.step2Title}</h2>
+                        <span className="inline-flex items-center gap-1.5 font-mono text-[12px] tabular-nums text-[#a3a9b8]">
+                          <Shield className="h-4 w-4 text-[#4cc38a]" strokeWidth={1.5} />
+                          <span>
                             {diagnosis.spoilerGuardrailPassed
-                              ? "0% Spoiler Leak Verified"
-                              : "Guardrail Alert"}
+                              ? "0% spoiler leak"
+                              : "Guardrail check"}
                           </span>
-                        </div>
+                        </span>
                       </div>
 
-                      <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3.5">
-                        <div className="flex items-center justify-between text-xs font-semibold text-amber-300">
-                          <span>Misconception: {diagnosis.misconceptionDetected}</span>
-                          <span className="font-mono">Bug near Line {diagnosis.brokenLine}</span>
+                      {/* Misconception Redline Callout */}
+                      <div className="rounded-[10px] border border-[#eef0f5]/[0.08] border-l-2 border-l-[#e5484d] bg-[#07080d] p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+                          <span className="font-medium text-[#eef0f5]">
+                            {diagnosis.misconceptionDetected}
+                          </span>
+                          <span className="rounded-[4px] border border-[#e5484d]/30 bg-[#e5484d]/[0.08] px-2 py-0.5 font-mono text-[12px] tabular-nums text-[#e5484d]">
+                            Line {diagnosis.brokenLine}
+                          </span>
                         </div>
-                        <p className="mt-1.5 text-xs leading-relaxed text-slate-200 sm:text-sm">
+                        <p className="mt-2 text-[13px] leading-relaxed text-[#a3a9b8]">
                           {diagnosis.diagnosisSummary}
                         </p>
                       </div>
 
-                      {/* Socratic Hint Tier Card */}
-                      <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-3.5">
-                        <div className="mb-1.5 flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-300">
-                            <Lightbulb className="h-4 w-4 text-amber-400" />
-                            Socratic Hint Tier {diagnosis.hintLevel} / 3
+                      {/* Progressive Socratic Hint Tier */}
+                      <div className="rounded-[10px] border border-[#eef0f5]/[0.08] bg-[#1a1e28] p-4">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-2 text-[13px] font-medium text-[#eef0f5]">
+                            <Lightbulb className="h-4 w-4 text-[#7a8296]" strokeWidth={1.5} />
+                            <span className="tabular-nums">
+                              Socratic hint {diagnosis.hintLevel} of 3
+                            </span>
                           </span>
-                          <span className="text-[11px] text-slate-400">
+                          <span className="font-mono text-[12px] text-[#7a8296]">
                             {diagnosis.llmProviderUsed}
                           </span>
                         </div>
-                        <p className="text-xs leading-relaxed text-slate-100 sm:text-sm">
+                        <p className="text-[14px] leading-relaxed text-[#eef0f5]">
                           {diagnosis.socraticHint}
                         </p>
 
@@ -563,43 +557,49 @@ export function App() {
                             type="button"
                             onClick={() => handleDiagnose(diagnosis.hintLevel + 1)}
                             disabled={loadingDiagnosis}
-                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/15 px-3 py-1.5 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/25"
+                            className="ease-unslop mt-3 inline-flex h-8 items-center gap-2 rounded-[6px] border border-[#eef0f5]/[0.1] bg-[#11141c] px-3 text-[12px] font-medium text-[#eef0f5] transition-colors duration-150 hover:border-[#38bdf8]/40 active:scale-[0.98]"
                           >
-                            <HelpCircle className="h-3.5 w-3.5" />
-                            {copy.nextHintBtn} ({diagnosis.hintLevel + 1}/3)
+                            <span className="tabular-nums">
+                              {copy.nextHintBtn} ({diagnosis.hintLevel + 1}/3)
+                            </span>
                           </button>
                         )}
                       </div>
 
-                      {/* Visual Memory Trace Stepper */}
+                      {/* Visual Memory Trace Moment */}
                       <TraceStepper
                         buggyTrace={diagnosis.visualTrace}
                         fixedTrace={activeTopic.visualTraceFixed}
                         showFixedTrace={Boolean(fixResult?.passed)}
                       />
 
-                      {/* Grounded Documentation Citations */}
-                      <div className="rounded-xl border border-slate-800 bg-[#0b111c] p-4">
-                        <div className="mb-2.5 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-200">
-                            Grounded Documentation References
+                      {/* Grounded CS Documentation References */}
+                      <div className="rounded-[12px] border border-[#eef0f5]/[0.08] bg-[#07080d] p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-[13px] font-medium text-[#a3a9b8]">
+                            Grounded references
                           </span>
-                          <span className="text-[11px] text-sky-400">Olostep Search API</span>
+                          <span className="font-mono text-[12px] text-[#7a8296]">
+                            Olostep search
+                          </span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="divide-y divide-[#eef0f5]/[0.06]">
                           {diagnosis.citations.map((c, idx) => (
                             <a
                               key={idx}
                               href={c.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="block rounded-lg border border-slate-800/90 bg-slate-900/70 p-2.5 transition hover:border-sky-500/40"
+                              className="ease-unslop group block py-2.5 first:pt-0 last:pb-0 transition-colors duration-150"
                             >
-                              <div className="flex items-center justify-between gap-2 text-xs font-semibold text-sky-300">
+                              <div className="flex items-center justify-between gap-2 text-[13px] font-medium text-[#eef0f5] group-hover:text-[#38bdf8]">
                                 <span className="truncate">{c.title}</span>
-                                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                <ArrowUpRight
+                                  className="h-4 w-4 shrink-0 text-[#7a8296] group-hover:text-[#38bdf8]"
+                                  strokeWidth={1.5}
+                                />
                               </div>
-                              <p className="mt-1 line-clamp-2 text-[11px] text-slate-400">
+                              <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#7a8296]">
                                 {c.snippet}
                               </p>
                             </a>
@@ -610,19 +610,18 @@ export function App() {
                   )}
                 </div>
 
-                {/* Right Column: Code Editor + Verify Fix + Blind Transfer Post-Test + Mastery Proof */}
+                {/* Right Workbench Column: Code Repair + Blind Transfer Post-Test */}
                 <div className="space-y-6 lg:col-span-6">
-                  {/* Stage 3: Interactive Code Repair */}
-                  <section className="rounded-2xl border border-slate-800 bg-[#0d1420] p-5">
+                  {/* Stage 3: Live Code Repair */}
+                  <section className="rounded-[14px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-5">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <h2 className="text-base font-bold text-white">{copy.step3Title}</h2>
-                        <p className="text-xs text-slate-400">
-                          Inspect line{" "}
-                          <span className="font-mono text-amber-300">
-                            #{diagnosis?.brokenLine ?? activeTopic.bugLine}
-                          </span>{" "}
-                          and repair the invariant below
+                        <h2 className="text-[16px] font-medium text-[#eef0f5]">{copy.step3Title}</h2>
+                        <p className="mt-1 text-[13px] text-[#7a8296]">
+                          Check invariant near{" "}
+                          <span className="rounded-[4px] border border-[#e5484d]/30 bg-[#e5484d]/[0.08] px-1.5 py-0.5 font-mono text-[12px] tabular-nums text-[#e5484d]">
+                            Line {highlightedLine}
+                          </span>
                         </p>
                       </div>
                       <button
@@ -631,110 +630,131 @@ export function App() {
                           setEditorCode(activeTopic.buggyCode);
                           setFixResult(null);
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800"
+                        className="ease-unslop inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-[#eef0f5]/[0.08] bg-[#1a1e28] px-3 text-[12px] font-medium text-[#a3a9b8] transition-colors duration-150 hover:text-[#eef0f5] active:scale-[0.98]"
                       >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        {copy.resetCodeBtn}
+                        <RotateCcw className="h-4 w-4 text-[#7a8296]" strokeWidth={1.5} />
+                        <span>{copy.resetCodeBtn}</span>
                       </button>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-slate-800 bg-[#070b12]">
-                      <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/70 px-3.5 py-2 text-[11px] font-mono text-slate-400">
-                        <span>Solution.java</span>
-                        <span>Expected Concept: {activeTopic.expectedConcept}</span>
+                    {/* Code editor with signature redline gutter */}
+                    <div className="overflow-hidden rounded-[10px] border border-[#eef0f5]/[0.08] bg-[#07080d]">
+                      <div className="flex items-center justify-between gap-3 border-b border-[#eef0f5]/[0.08] bg-[#11141c] px-4 py-2 font-mono text-[12px] text-[#7a8296]">
+                        <span className="text-[#a3a9b8]">Solution.java</span>
+                        <span className="truncate">{activeTopic.expectedConcept}</span>
                       </div>
-                      <textarea
-                        value={editorCode}
-                        onChange={(e) => setEditorCode(e.target.value)}
-                        rows={11}
-                        spellCheck={false}
-                        className="w-full resize-y bg-transparent p-4 font-mono text-xs leading-relaxed text-slate-100 focus:outline-none sm:text-[13px]"
-                      />
+
+                      <div className="flex">
+                        <div
+                          aria-hidden="true"
+                          className="select-none border-r border-[#eef0f5]/[0.06] bg-[#0b0d14] py-4 pl-3 pr-2.5 text-right font-mono text-[12px] leading-[1.625] tabular-nums"
+                        >
+                          {codeLines.map((_, idx) => {
+                            const lineNum = idx + 1;
+                            const isFault = lineNum === highlightedLine && !fixResult?.passed;
+                            return (
+                              <div
+                                key={lineNum}
+                                className={
+                                  isFault
+                                    ? "font-medium text-[#e5484d]"
+                                    : "text-[#7a8296]/70"
+                                }
+                              >
+                                {lineNum}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <textarea
+                          value={editorCode}
+                          onChange={(e) => setEditorCode(e.target.value)}
+                          rows={Math.max(10, codeLines.length)}
+                          spellCheck={false}
+                          className="w-full resize-y bg-transparent p-4 font-mono text-[13px] leading-[1.625] text-[#eef0f5] focus:outline-none"
+                        />
+                      </div>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                       <button
                         type="button"
                         onClick={handleVerifyFix}
                         disabled={loadingVerify}
-                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                        className="ease-unslop inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#eef0f5] px-4 text-[14px] font-medium text-[#07080d] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
                       >
-                        <CheckCircle2 className="h-4 w-4" />
-                        {loadingVerify ? "Running Tests..." : copy.verifyFixBtn}
+                        <Check className="h-4 w-4 text-[#07080d]" strokeWidth={1.5} />
+                        <span>{loadingVerify ? "Running tests" : copy.verifyFixBtn}</span>
                       </button>
 
                       {fixResult && (
                         <span
-                          className={`rounded-full px-3 py-1 font-mono text-xs font-bold ${
-                            fixResult.passed
-                              ? "bg-emerald-500/20 text-emerald-300"
-                              : "bg-rose-500/20 text-rose-300"
+                          className={`font-mono text-[13px] font-medium tabular-nums ${
+                            fixResult.passed ? "text-[#4cc38a]" : "text-[#e5484d]"
                           }`}
                         >
-                          {fixResult.testsPassed} / {fixResult.testsRun} Tests Passed
+                          {fixResult.testsPassed} / {fixResult.testsRun} passed
                         </span>
                       )}
                     </div>
 
                     {fixResult && (
-                      <div className="mt-4 space-y-2.5">
+                      <div className="mt-4 space-y-2">
                         <div
-                          className={`rounded-xl border p-3 text-xs leading-relaxed ${
+                          className={`rounded-[8px] border p-3 text-[13px] leading-relaxed ${
                             fixResult.passed
-                              ? "border-emerald-500/40 bg-emerald-950/25 text-emerald-200"
-                              : "border-rose-500/40 bg-rose-950/25 text-rose-200"
+                              ? "border-[#4cc38a]/30 bg-[#07080d] text-[#eef0f5]"
+                              : "border-[#e5484d]/30 bg-[#07080d] text-[#eef0f5]"
                           }`}
                         >
                           {fixResult.feedback}
                         </div>
 
-                        {fixResult.testCases.map((tc, i) => (
-                          <div
-                            key={i}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              {tc.passed ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                              ) : (
-                                <XCircle className="h-4 w-4 text-rose-400" />
-                              )}
-                              <span className="font-semibold text-slate-200">{tc.name}</span>
+                        <div className="divide-y divide-[#eef0f5]/[0.06] rounded-[8px] border border-[#eef0f5]/[0.08] bg-[#07080d]">
+                          {fixResult.testCases.map((tc, i) => (
+                            <div
+                              key={i}
+                              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-[12px]"
+                            >
+                              <div className="flex items-center gap-2">
+                                {tc.passed ? (
+                                  <Check className="h-4 w-4 text-[#4cc38a]" strokeWidth={1.5} />
+                                ) : (
+                                  <X className="h-4 w-4 text-[#e5484d]" strokeWidth={1.5} />
+                                )}
+                                <span className="font-medium text-[#eef0f5]">{tc.name}</span>
+                              </div>
+                              <div className="font-mono tabular-nums text-[#7a8296]">
+                                Expected <span className="text-[#a3a9b8]">{tc.expected}</span> ·
+                                Actual{" "}
+                                <span
+                                  className={tc.passed ? "text-[#4cc38a]" : "text-[#e5484d]"}
+                                >
+                                  {tc.actual}
+                                </span>
+                              </div>
                             </div>
-                            <div className="font-mono text-[11px] text-slate-400">
-                              Expected: <span className="text-slate-200">{tc.expected}</span> ·
-                              Actual:{" "}
-                              <span className={tc.passed ? "text-emerald-300" : "text-rose-300"}>
-                                {tc.actual}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     )}
                   </section>
 
-                  {/* Stage 4: Blind Transfer Post-Test & Mastery Proof */}
-                  <section
-                    className={`rounded-2xl border p-5 transition ${
-                      fixResult?.readyForTransferTest
-                        ? "border-emerald-500/40 bg-[#0d1420]"
-                        : "border-slate-800 bg-[#0d1420]/90"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
+                  {/* Stage 4: Blind Transfer Post-Test & Mastery Proof Moment */}
+                  <section className="rounded-[14px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <h2 className="text-base font-bold text-white">{copy.step4Title}</h2>
-                        <p className="mt-0.5 text-xs text-slate-400">{copy.step4Sub}</p>
+                        <h2 className="text-[16px] font-medium text-[#eef0f5]">{copy.step4Title}</h2>
+                        <p className="mt-1 text-[13px] text-[#7a8296]">{copy.step4Sub}</p>
                       </div>
                       {fixResult?.readyForTransferTest && (
-                        <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-                          Unlocked by Green Build
+                        <span className="font-mono text-[12px] text-[#4cc38a]">
+                          Green build ready
                         </span>
                       )}
                     </div>
 
-                    <p className="mt-3 text-sm font-medium text-slate-200">
+                    <p className="mt-4 text-[14px] leading-relaxed text-[#eef0f5]">
                       {activeTopic.transferTest.question[language]}
                     </p>
 
@@ -746,22 +766,22 @@ export function App() {
                             key={idx}
                             type="button"
                             onClick={() => setTransferIndex(idx)}
-                            className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-xs transition sm:text-sm ${
+                            className={`ease-unslop flex min-h-[40px] w-full items-center gap-3 rounded-[8px] border px-3 py-2 text-left text-[13px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] ${
                               selected
-                                ? "border-emerald-500 bg-emerald-500/15 text-white"
-                                : "border-slate-800 bg-slate-900/70 text-slate-300 hover:border-slate-700"
+                                ? "border-[#38bdf8]/50 bg-[#1a1e28] text-[#eef0f5]"
+                                : "border-[#eef0f5]/[0.08] bg-[#07080d]/60 text-[#a3a9b8] hover:border-[#eef0f5]/[0.14] hover:text-[#eef0f5]"
                             }`}
                           >
                             <span
-                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold ${
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[4px] border font-mono text-[12px] tabular-nums ${
                                 selected
-                                  ? "bg-emerald-500 text-slate-950"
-                                  : "bg-slate-800 text-slate-400"
+                                  ? "border-[#38bdf8]/40 bg-[#38bdf8]/15 text-[#38bdf8]"
+                                  : "border-[#eef0f5]/[0.08] bg-[#11141c] text-[#7a8296]"
                               }`}
                             >
                               {String.fromCharCode(65 + idx)}
                             </span>
-                            <span>{opt}</span>
+                            <span className="leading-snug">{opt}</span>
                           </button>
                         );
                       })}
@@ -771,69 +791,79 @@ export function App() {
                       type="button"
                       onClick={handleSubmitTransfer}
                       disabled={transferIndex === undefined || loadingTransfer}
-                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+                      className="ease-unslop mt-4 inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#38bdf8] px-4 text-[14px] font-medium text-[#07080d] transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
                     >
-                      <Award className="h-4 w-4" />
-                      {loadingTransfer ? "Evaluating..." : copy.proveMasteryBtn}
+                      <span>{loadingTransfer ? "Evaluating" : copy.proveMasteryBtn}</span>
+                      <ArrowRight className="h-4 w-4 text-[#07080d]" strokeWidth={1.5} />
                     </button>
 
+                    {/* Mastery Proof Scorecard Moment */}
                     {masteryReport && (
-                      <div className="mt-5 rounded-xl border border-emerald-500/40 bg-gradient-to-br from-slate-900 to-[#0a1622] p-4">
+                      <div className="mt-5 rounded-[12px] border border-[#eef0f5]/[0.1] bg-[#07080d] p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <Award
-                              className={`h-5 w-5 ${
+                            <span
+                              className={`h-2 w-2 rounded-full ${
                                 masteryReport.verdict === "VERIFIED MASTERY"
-                                  ? "text-emerald-400"
-                                  : "text-amber-400"
+                                  ? "bg-[#4cc38a]"
+                                  : "bg-[#d99b43]"
                               }`}
                             />
-                            <span className="text-sm font-extrabold tracking-wide text-white">
-                              {masteryReport.verdict}
+                            <span className="text-[15px] font-medium text-[#eef0f5]">
+                              {masteryReport.verdict === "VERIFIED MASTERY"
+                                ? "Verified mastery"
+                                : "Needs practice"}
                             </span>
                           </div>
-                          <span className="font-mono text-xs text-slate-400">
+                          <span className="font-mono text-[12px] text-[#7a8296]">
                             {masteryReport.pedagogicalEval.languageFidelity}
                           </span>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                          <div className="rounded-lg border border-slate-800 bg-[#070b12] p-2.5">
-                            <div className="text-[11px] text-slate-400">Pre-Test</div>
-                            <div className="font-mono text-lg font-bold text-slate-300">
-                              {masteryReport.preScorePct}%
-                            </div>
-                          </div>
-                          <div className="rounded-lg border border-slate-800 bg-[#070b12] p-2.5">
-                            <div className="text-[11px] text-slate-400">Post-Test</div>
-                            <div className="font-mono text-lg font-bold text-emerald-400">
-                              {masteryReport.postScorePct}%
-                            </div>
-                          </div>
-                          <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/30 p-2.5">
-                            <div className="text-[11px] text-emerald-300">Mastery Delta</div>
-                            <div className="font-mono text-lg font-extrabold text-emerald-300">
+                        {/* Asymmetric hero delta paired with compact Pre/Post comparison */}
+                        <div className="mt-4 grid grid-cols-1 gap-4 border-y border-[#eef0f5]/[0.08] py-4 sm:grid-cols-12">
+                          <div className="sm:col-span-6">
+                            <div className="text-[12px] text-[#7a8296]">Mastery gain</div>
+                            <div className="mt-1 font-mono text-[32px] font-medium leading-none tracking-[-0.02em] tabular-nums text-[#4cc38a]">
                               +{masteryReport.masteryDeltaPct}%
+                            </div>
+                            <div className="mt-1.5 font-mono text-[12px] tabular-nums text-[#7a8296]">
+                              vs pre-test baseline
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 sm:col-span-6">
+                            <div className="rounded-[8px] border border-[#eef0f5]/[0.06] bg-[#11141c] p-3">
+                              <div className="text-[12px] text-[#7a8296]">Pre-test</div>
+                              <div className="mt-1 font-mono text-[20px] font-medium leading-none tabular-nums text-[#a3a9b8]">
+                                {masteryReport.preScorePct}%
+                              </div>
+                            </div>
+                            <div className="rounded-[8px] border border-[#eef0f5]/[0.06] bg-[#11141c] p-3">
+                              <div className="text-[12px] text-[#7a8296]">Post-test</div>
+                              <div className="mt-1 font-mono text-[20px] font-medium leading-none tabular-nums text-[#eef0f5]">
+                                {masteryReport.postScorePct}%
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <p className="mt-3 text-xs leading-relaxed text-slate-300">
+                        <p className="mt-4 text-[13px] leading-relaxed text-[#a3a9b8]">
                           {masteryReport.transferExplanation}
                         </p>
 
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-3 text-[11px] text-slate-400">
-                          <span>
-                            Hints used: {masteryReport.hintsUsed}/3 · Spoiler leakage:{" "}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[12px] text-[#7a8296]">
+                          <span className="font-mono tabular-nums">
+                            Hints {masteryReport.hintsUsed}/3 · Spoiler leak{" "}
                             {masteryReport.pedagogicalEval.spoilerLeakPct}%
                           </span>
                           <button
                             type="button"
                             onClick={handleAdvanceLab}
-                            className="inline-flex items-center gap-1 font-semibold text-indigo-300 hover:text-indigo-200"
+                            className="ease-unslop inline-flex items-center gap-1.5 font-medium text-[#38bdf8] transition-colors duration-150 hover:text-[#eef0f5]"
                           >
-                            {copy.nextLabBtn}
-                            <ArrowRight className="h-3.5 w-3.5" />
+                            <span>{copy.nextLabBtn}</span>
+                            <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>

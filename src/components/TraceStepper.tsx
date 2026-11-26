@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Cpu } from "lucide-react";
+import { AlertCircle, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { VisualTraceStep } from "../types";
 
 interface TraceStepperProps {
@@ -27,27 +27,24 @@ export const TraceStepper: React.FC<TraceStepperProps> = ({
   if (!steps.length || !current) return null;
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#0b111c] p-4">
+    <div className="rounded-[12px] border border-[#eef0f5]/[0.08] bg-[#07080d] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Cpu className="h-4 w-4 text-sky-400" />
-          <h4 className="text-sm font-semibold text-slate-100">Visual Memory Trace</h4>
-        </div>
+        <span className="text-[14px] font-medium text-[#eef0f5]">Memory trace</span>
 
-        <div className="flex items-center gap-1 rounded-lg bg-slate-900 p-0.5 text-xs">
+        <div className="inline-flex items-center rounded-[8px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-0.5 text-[12px]">
           <button
             type="button"
             onClick={() => {
               setViewMode("buggy");
               setActiveIndex(0);
             }}
-            className={`rounded-md px-2.5 py-1 font-medium transition ${
+            className={`ease-unslop rounded-[6px] px-2.5 py-1 transition-colors duration-150 ${
               viewMode === "buggy"
-                ? "bg-rose-500/20 text-rose-300"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#1a1e28] font-medium text-[#eef0f5] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                : "text-[#7a8296] hover:text-[#a3a9b8]"
             }`}
           >
-            Buggy State
+            Buggy state
           </button>
           <button
             type="button"
@@ -56,21 +53,24 @@ export const TraceStepper: React.FC<TraceStepperProps> = ({
               setViewMode("fixed");
               setActiveIndex(0);
             }}
-            className={`rounded-md px-2.5 py-1 font-medium transition ${
+            title={
+              showFixedTrace ? "Inspect verified execution trace" : "Verify your fix to unlock"
+            }
+            className={`ease-unslop rounded-[6px] px-2.5 py-1 transition-colors duration-150 ${
               viewMode === "fixed"
-                ? "bg-emerald-500/20 text-emerald-300"
+                ? "bg-[#1a1e28] font-medium text-[#4cc38a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                 : showFixedTrace
-                  ? "text-slate-400 hover:text-slate-200"
-                  : "cursor-not-allowed text-slate-600"
+                  ? "text-[#7a8296] hover:text-[#a3a9b8]"
+                  : "cursor-not-allowed text-[#7a8296]/40"
             }`}
-            title={showFixedTrace ? "Inspect verified execution trace" : "Verify your fix to unlock Fixed Trace"}
           >
-            Verified State
+            Verified state
           </button>
         </div>
       </div>
 
-      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
+      {/* Stepper frame tabs */}
+      <div className="mb-3 grid grid-cols-4 gap-2">
         {steps.map((step, idx) => {
           const selected = idx === activeIndex;
           return (
@@ -78,71 +78,66 @@ export const TraceStepper: React.FC<TraceStepperProps> = ({
               key={`${viewMode}-${step.step}`}
               type="button"
               onClick={() => setActiveIndex(idx)}
-              className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
+              className={`ease-unslop flex h-8 items-center justify-between rounded-[6px] border px-2.5 font-mono text-[12px] tabular-nums transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#38bdf8] ${
                 selected
                   ? step.isError
-                    ? "border-rose-500/60 bg-rose-500/15 text-rose-200"
-                    : "border-sky-500/60 bg-sky-500/15 text-sky-100"
-                  : step.isError
-                    ? "border-rose-500/25 bg-slate-900/70 text-rose-300/80 hover:border-rose-500/40"
-                    : "border-slate-800 bg-slate-900/70 text-slate-400 hover:text-slate-200"
+                    ? "border-[#e5484d]/50 bg-[#e5484d]/[0.1] text-[#eef0f5]"
+                    : "border-[#38bdf8]/50 bg-[#1a1e28] text-[#eef0f5]"
+                  : "border-[#eef0f5]/[0.08] bg-[#11141c] text-[#7a8296] hover:text-[#a3a9b8]"
               }`}
             >
-              <span className="font-mono font-semibold">Step {step.step}</span>
+              <span>Step {step.step}</span>
+              {step.isError && <span className="h-1.5 w-1.5 rounded-full bg-[#e5484d]" />}
             </button>
           );
         })}
       </div>
 
-      <div
-        className={`rounded-lg border p-3.5 ${
-          current.isError
-            ? "border-rose-500/40 bg-rose-950/20"
-            : viewMode === "fixed"
-              ? "border-emerald-500/35 bg-emerald-950/15"
-              : "border-slate-800 bg-slate-900/80"
-        }`}
-      >
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-semibold">
+      {/* Active trace state panel */}
+      <div className="rounded-[8px] border border-[#eef0f5]/[0.08] bg-[#11141c] p-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-[13px] font-medium">
             {current.isError ? (
-              <AlertTriangle className="h-4 w-4 text-rose-400" />
+              <AlertCircle className="h-4 w-4 shrink-0 text-[#e5484d]" strokeWidth={1.5} />
             ) : (
-              <CheckCircle2
-                className={`h-4 w-4 ${viewMode === "fixed" ? "text-emerald-400" : "text-sky-400"}`}
+              <Check
+                className={`h-4 w-4 shrink-0 ${
+                  viewMode === "fixed" ? "text-[#4cc38a]" : "text-[#a3a9b8]"
+                }`}
+                strokeWidth={1.5}
               />
             )}
-            <span className={current.isError ? "text-rose-300" : "text-slate-200"}>
+            <span className={current.isError ? "text-[#e5484d]" : "text-[#eef0f5]"}>
               {current.label}
             </span>
           </div>
-          <span className="font-mono text-[11px] text-slate-500">
+          <span className="font-mono text-[12px] tabular-nums text-[#7a8296]">
             {activeIndex + 1} / {steps.length}
           </span>
         </div>
 
-        <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-[#070b12] p-2.5 font-mono text-xs leading-relaxed text-slate-200">
+        <pre className="overflow-x-auto whitespace-pre-wrap rounded-[6px] border border-[#eef0f5]/[0.06] bg-[#07080d] p-3 font-mono text-[12px] leading-relaxed text-[#eef0f5]">
           {current.state}
         </pre>
 
-        <div className="mt-2.5 flex items-center justify-end gap-2">
+        <div className="mt-3 flex items-center justify-end gap-2">
           <button
             type="button"
             disabled={activeIndex === 0}
             onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 transition hover:bg-slate-800 disabled:opacity-40"
+            className="ease-unslop inline-flex h-8 items-center gap-1 rounded-[6px] border border-[#eef0f5]/[0.08] bg-[#1a1e28] px-2.5 text-[12px] text-[#a3a9b8] transition-colors duration-150 hover:text-[#eef0f5] active:scale-[0.98] disabled:opacity-40"
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
             Prev
           </button>
           <button
             type="button"
             disabled={activeIndex >= steps.length - 1}
             onClick={() => setActiveIndex((i) => Math.min(steps.length - 1, i + 1))}
-            className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 transition hover:bg-slate-800 disabled:opacity-40"
+            className="ease-unslop inline-flex h-8 items-center gap-1 rounded-[6px] border border-[#eef0f5]/[0.08] bg-[#1a1e28] px-2.5 text-[12px] text-[#a3a9b8] transition-colors duration-150 hover:text-[#eef0f5] active:scale-[0.98] disabled:opacity-40"
           >
             Next
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
       </div>
