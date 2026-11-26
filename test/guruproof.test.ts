@@ -90,6 +90,11 @@ async function runTests() {
       const fixes: Record<string, string> = {
         "circular-linked-list": `static void insertBeginning(int data) {
           Node newNode = new Node(data);
+          if (head == null) {
+            head = newNode;
+            newNode.next = head;
+            return;
+          }
           Node temp = head;
           while (temp.next != head) { temp = temp.next; }
           newNode.next = head;

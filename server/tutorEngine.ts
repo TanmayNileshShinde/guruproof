@@ -230,11 +230,15 @@ export class TutorEngine {
     const clean = fixedCode.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
 
     if (topicId === "circular-linked-list") {
-      const idxWhile = clean.indexOf("while");
-      const idxHeadSet = clean.search(/head\s*=\s*newNode/);
-      const hasTempLink = /temp\.next\s*=\s*newNode/.test(clean);
-      const hasNewNext = /newNode\.next\s*=\s*head/.test(clean);
-      const headMovedAfterLoop = idxWhile !== -1 && idxHeadSet > idxWhile && clean.indexOf("temp.next = newNode") < idxHeadSet;
+      // Exclude the empty-list `if (head == null)` base guard so valid `head = newNode` there doesn't look premature.
+      const body = clean.replace(/if\s*\(\s*head\s*==\s*null\s*\)\s*\{[^}]*\}/g, "");
+      const idxWhile = body.indexOf("while");
+      const idxHeadSet = body.search(/head\s*=\s*newNode/);
+      const idxTempLink = body.search(/temp\.next\s*=\s*newNode/);
+      const hasTempLink = idxTempLink !== -1;
+      const hasNewNext = /newNode\.next\s*=\s*head/.test(body);
+      const headMovedAfterLoop =
+        idxWhile !== -1 && idxHeadSet > idxWhile && idxTempLink !== -1 && idxTempLink < idxHeadSet;
 
       const c1 = hasNewNext;
       const c2 = idxWhile !== -1 && headMovedAfterLoop;
