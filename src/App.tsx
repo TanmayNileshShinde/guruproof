@@ -165,14 +165,15 @@ export function App() {
   const handleLanguageChange = async (nextLang: TutorLanguage) => {
     setLanguage(nextLang);
     if (diagnosis && activeTopic) {
+      const useCustom = customMode && Boolean(customCode.trim());
       setLoadingDiagnosis(true);
       try {
         const refreshed = await tutorApi.diagnose({
-          topicId: activeTopic.id,
+          topicId: useCustom ? "custom" : activeTopic.id,
           language: nextLang,
           preAnswerIndex,
           hintLevel,
-          customCode: customMode ? customCode : undefined,
+          customCode: useCustom ? customCode : undefined,
         });
         setDiagnosis(refreshed);
       } catch (err: any) {
@@ -185,20 +186,21 @@ export function App() {
 
   const handleDiagnose = async (overrideHintLevel?: number) => {
     if (!activeTopic) return;
+    const useCustom = customMode && Boolean(customCode.trim());
     const nextHint = overrideHintLevel ?? hintLevel;
     setHintLevel(nextHint);
     setLoadingDiagnosis(true);
     setErrorBanner(null);
     try {
       const res = await tutorApi.diagnose({
-        topicId: activeTopic.id,
+        topicId: useCustom ? "custom" : activeTopic.id,
         language,
         preAnswerIndex,
         hintLevel: nextHint,
-        customCode: customMode && customCode.trim() ? customCode : undefined,
+        customCode: useCustom ? customCode : undefined,
       });
       setDiagnosis(res);
-      if (customMode && customCode.trim()) {
+      if (useCustom) {
         setEditorCode(customCode);
       }
     } catch (err: any) {
